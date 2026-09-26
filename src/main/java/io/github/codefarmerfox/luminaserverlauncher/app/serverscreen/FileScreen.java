@@ -26,8 +26,8 @@ public class FileScreen {
     public void refreshFiles() {
         fileEntries.clear();
         if (!Files.isDirectory(browseDir)) return;
-        try {
-            fileEntries = Files.list(browseDir)
+        try (var stream = Files.list(browseDir)) {
+            fileEntries = stream
                     .sorted(Comparator
                             .comparing((Path p) -> !Files.isDirectory(p))
                             .thenComparing(p -> p.getFileName().toString().toLowerCase()))
@@ -82,7 +82,7 @@ public class FileScreen {
         float cardX = host.cardX(), cardW = host.cardW(), cardY = host.cardY(), cardH = host.cardH();
         float lx = host.lx();
         float y = cardY + cardH - 40;
-        UI.textLeft(host.headingFont(), host.batch(), "FILES", lx, y, UI.TEXT_DIM);
+        UI.textLeft(host.headingFont(), host.batch(), "文件", lx, y, UI.TEXT_DIM);
 
         String rel = host.serverDir().relativize(browseDir).toString();
         UI.textLeft(host.smallFont(), host.batch(),

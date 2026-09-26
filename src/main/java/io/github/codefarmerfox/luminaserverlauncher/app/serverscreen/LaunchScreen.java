@@ -125,9 +125,14 @@ public class LaunchScreen {
             return;
         }
         if (UI.clicked(btnX, eulaBtnY(), btnW, btnH)) {
-            EULA.agree(host.serverName());
-            eulaFlash = "已同意 EULA";
-            eulaFlashTimer = 2f;
+            try {
+                EULA.agree(host.serverDir());
+                eulaFlash = "已同意 EULA";
+                eulaFlashTimer = 2f;
+            } catch (IOException e) {
+                eulaFlash = "写入失败: " + e.getMessage();
+                eulaFlashTimer = 3f;
+            }
             return;
         }
 
@@ -172,24 +177,24 @@ public class LaunchScreen {
         motdInput.drawShapes(host.shapes());
     }
 
-    public void drawText(boolean running) {
-        if (flashTimer > 0) flashTimer -= 0.016f; else motdSavedFlash = null;
-        if (eulaFlashTimer > 0) eulaFlashTimer -= 0.016f; else eulaFlash = null;
+    public void drawText(boolean running, float delta) {
+        if (flashTimer > 0) flashTimer -= delta; else motdSavedFlash = null;
+        if (eulaFlashTimer > 0) eulaFlashTimer -= delta; else eulaFlash = null;
 
         float cardX = host.cardX(), cardW = host.cardW();
         float base = host.cardY() + host.cardH() - 48;
         Color statusColor = running ? RUNNING : host.hasJar() ? UI.ACCENT : UI.TEXT_DIM;
-        String statusText = running ? "Running" : launchError != null ? "Error" : host.hasJar() ? "Ready" : "Missing";
+        String statusText = running ? "运行中" : launchError != null ? "错误" : host.hasJar() ? "就绪" : "缺失";
         UI.textLeft(host.bodyFont(), host.batch(), statusText, host.lx() + 32, base, statusColor);
 
         float y = base - 50;
-        UI.textLeft(host.headingFont(), host.batch(), "SERVER JAR", host.lx(), y, UI.TEXT_DIM);
-        UI.textLeft(host.bodyFont(), host.batch(), host.hasJar() ? "Ready" : "Missing", host.lx() + 200, y,
+        UI.textLeft(host.headingFont(), host.batch(), "服务端核心", host.lx(), y, UI.TEXT_DIM);
+        UI.textLeft(host.bodyFont(), host.batch(), host.hasJar() ? "就绪" : "缺失", host.lx() + 200, y,
                 host.hasJar() ? UI.ACCENT : UI.TEXT_DIM);
 
         y -= 40;
-        UI.textLeft(host.headingFont(), host.batch(), "JAVA", host.lx(), y, UI.TEXT_DIM);
-        UI.textLeft(host.bodyFont(), host.batch(), "21+ required", host.lx() + 200, y, UI.TEXT_MAIN);
+        UI.textLeft(host.headingFont(), host.batch(), "Java", host.lx(), y, UI.TEXT_DIM);
+        UI.textLeft(host.bodyFont(), host.batch(), "需要 21+", host.lx() + 200, y, UI.TEXT_MAIN);
 
         for (String line : logLines) {
             y -= 20;
@@ -211,7 +216,7 @@ public class LaunchScreen {
             UI.textLeft(host.smallFont(), host.batch(), truncate(launchError, 70), host.lx(), launchBtnY() + 70, DANGER);
         }
 
-        UI.text(host.bodyFont(), host.batch(), running ? "Stop Server" : "Launch Server",
+        UI.text(host.bodyFont(), host.batch(), running ? "停止服务器" : "启动服务器",
                 cardX + cardW / 2f, launchBtnY() + 50 / 2f + 6,
                 running ? Color.WHITE : UI.TEXT_MAIN);
 

@@ -28,8 +28,11 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerScreen extends ScreenAdapter implements InputProcessor {
 
-    private static final Color TAB_ACTIVE = new Color(0.22f, 0.26f, 0.34f, 1f);
+    private static final Color TAB_ACTIVE = new Color(0.259f, 0.647f, 0.961f, 1f);
     private static final Color TAB_IDLE = new Color(0.16f, 0.18f, 0.24f, 1f);
+    private static final Color TAB_HOVER = new Color(0.24f, 0.27f, 0.34f, 1f);
+    private static final Color BACK_HOVER = new Color(0.90f, 0.92f, 0.96f, 1f);
+    private static final Color BACK_TEXT = new Color(0.16f, 0.18f, 0.24f, 1f);
     private static final long STOP_WAIT_MS = 2000;
 
     public static final String[] TABS = {"服务器", "选项", "控制台", "文件"};
@@ -53,6 +56,8 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
     private BitmapFont bodyFont;
     private BitmapFont smallFont;
     private BitmapFont monoFont;
+    private BitmapFont sideBodyFont;
+    private BitmapFont sideSmallFont;
 
     private Process process;
     private OutputStream processIn;
@@ -90,12 +95,16 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
             bodyFont = GetFont.getFont(GetFont.getParameter(20, c));
             smallFont = GetFont.getFont(GetFont.getParameter(15, c));
             monoFont = GetFont.getFont(GetFont.getParameter(15, c));
+            sideBodyFont = GetFont.getFont(GetFont.getParameter(20, Color.WHITE));
+            sideSmallFont = GetFont.getFont(GetFont.getParameter(15, Color.WHITE));
         } catch (Exception e) {
             titleFont = new BitmapFont();
             headingFont = new BitmapFont();
             bodyFont = new BitmapFont();
             smallFont = new BitmapFont();
             monoFont = new BitmapFont();
+            sideBodyFont = new BitmapFont();
+            sideSmallFont = new BitmapFont();
         }
         consoleInput.setFont(monoFont)
                 .setPlaceholder("输入命令后回车...")
@@ -112,7 +121,6 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
         Gdx.input.setInputProcessor(this);
     }
 
-    // ---------- 提供给子屏幕的访问 ----------
     public App app() { return app; }
     public String serverName() { return serverName; }
     public Path serverDir() { return serverDir; }
@@ -144,7 +152,7 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
     public void launch() {
         Path jar = serverDir.resolve(VanillaDownloader.SERVER_JAR_NAME);
         if (!Files.exists(jar)) {
-            launchScreen.setLaunchError("server.jar missing - download it first");
+            launchScreen.setLaunchError("缺少 server.jar，请先在主菜单下载");
             return;
         }
         try {
@@ -162,23 +170,34 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
             consoleInput.setFocused(true);
             consoleScreen.refreshTail();
         } catch (IOException e) {
-            launchScreen.setLaunchError("Failed to launch: " + e.getMessage());
+            launchScreen.setLaunchError("启动失败: " + e.getMessage());
         }
     }
 
     public void stopServerBlocking() {
         Process p = process;
         process = null;
+        OutputStream in = processIn;
         processIn = null;
+        if (in != null) {
+            try {
+                in.close();
+            } catch (IOException ignored) {
+            }
+        }
         if (p == null || !p.isAlive()) return;
         p.destroy();
-        try {
-            if (!p.waitFor(STOP_WAIT_MS, TimeUnit.MILLISECONDS)) {
-                p.destroyForcibly();
+        Thread killer = new Thread(() -> {
+            try {
+                if (!p.waitFor(STOP_WAIT_MS, TimeUnit.MILLISECONDS)) {
+                    p.destroyForcibly();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        }, "server-stop");
+        killer.setDaemon(true);
+        killer.start();
     }
 
     public void sendCommand(String cmd) {
@@ -195,7 +214,6 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
         app.setScreen(new MenuScreen(app));
     }
 
-    // ---------- 渲染 ----------
     @Override
     public void render(float delta) {
         int w = Gdx.graphics.getWidth();
@@ -236,11 +254,11 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
             boolean disabled = (i == TAB_CONSOLE && !hasJar() && !running);
             boolean hover = UI.hovered(0, ty, SIDEBAR_W, TAB_H) && !disabled;
             if (active) shapes.setColor(TAB_ACTIVE);
-            else if (hover) shapes.setColor(UI.LIST_HOVER);
+            else if (hover) shapes.setColor(TAB_HOVER);
             else shapes.setColor(TAB_IDLE);
             shapes.rect(0, ty, SIDEBAR_W, TAB_H);
             if (active) {
-                shapes.setColor(UI.ACCENT);
+                shapes.setColor(Color.WHITE);
                 shapes.rect(0, ty, 4, TAB_H);
             }
         }
@@ -253,24 +271,22 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
 
         float backW = 110, backH = 38, backX = 26, backY = 26;
         boolean hoverBack = UI.hovered(backX, backY, backW, backH);
-        shapes.setColor(hoverBack ? new Color(0.90f, 0.92f, 0.96f, 1f) : Color.WHITE);
+        shapes.setColor(hoverBack ? BACK_HOVER : Color.WHITE);
         UI.roundedFilled(shapes, backX, backY, backW, backH, 8);
 
         shapes.end();
 
         batch.begin();
-        UI.textLeft(smallFont, batch, "SERVER", 20, h - 64, UI.TEXT_DIM);
+        UI.textLeft(sideSmallFont, batch, "服务器管理", 20, h - 28, Color.WHITE);
         for (int i = 0; i < TABS.length; i++) {
             float ty = h - 100 - i * (TAB_H + 8);
-            boolean disabled = (i == TAB_CONSOLE && !hasJar() && !running);
-            Color tc = (i == currentTab) ? UI.TEXT_MAIN : disabled ? UI.TEXT_DIM : UI.TEXT_MAIN;
-            UI.textLeft(bodyFont, batch, TABS[i], 28, ty + TAB_H / 2f, tc);
+            UI.textLeft(sideBodyFont, batch, TABS[i], 28, ty + TAB_H / 2f, Color.WHITE);
         }
-        UI.textLeft(smallFont, batch, "< Back", 40, 45, new Color(0.16f, 0.18f, 0.24f, 1f));
+        UI.textLeft(smallFont, batch, "< 返回", 40, 45, BACK_TEXT);
 
         UI.text(titleFont, batch, serverName, cardX + 24, h - 70, UI.TEXT_MAIN);
 
-        if (currentTab == TAB_SERVER) launchScreen.drawText(running);
+        if (currentTab == TAB_SERVER) launchScreen.drawText(running, delta);
         else if (currentTab == TAB_OPTIONS) propertiesScreen.drawText();
         else if (currentTab == TAB_CONSOLE) consoleScreen.drawText(running);
         else if (currentTab == TAB_FILES) fileScreen.drawText();
@@ -297,7 +313,6 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
         else if (currentTab == TAB_FILES) fileScreen.handleInput();
     }
 
-    // ---------- InputProcessor ----------
     @Override
     public boolean keyDown(int keycode) {
         if (currentTab == TAB_SERVER) return launchScreen.keyDown(keycode);
@@ -320,17 +335,28 @@ public class ServerScreen extends ScreenAdapter implements InputProcessor {
     @Override public boolean scrolled(float ax, float ay) { return false; }
     @Override public boolean touchCancelled(int x, int y, int p, int b) { return false; }
 
-    @Override
-    public void dispose() {
+    private void release() {
         stopServerBlocking();
         if (Gdx.input.getInputProcessor() == this) Gdx.input.setInputProcessor(null);
-        if (batch != null) batch.dispose();
-        if (shapes != null) shapes.dispose();
-        if (white != null) white.dispose();
-        if (titleFont != null) titleFont.dispose();
-        if (headingFont != null) headingFont.dispose();
-        if (bodyFont != null) bodyFont.dispose();
-        if (smallFont != null) smallFont.dispose();
-        if (monoFont != null) monoFont.dispose();
+        if (batch != null) { batch.dispose(); batch = null; }
+        if (shapes != null) { shapes.dispose(); shapes = null; }
+        if (white != null) { white.dispose(); white = null; }
+        if (titleFont != null) { titleFont.dispose(); titleFont = null; }
+        if (headingFont != null) { headingFont.dispose(); headingFont = null; }
+        if (bodyFont != null) { bodyFont.dispose(); bodyFont = null; }
+        if (smallFont != null) { smallFont.dispose(); smallFont = null; }
+        if (monoFont != null) { monoFont.dispose(); monoFont = null; }
+        if (sideBodyFont != null) { sideBodyFont.dispose(); sideBodyFont = null; }
+        if (sideSmallFont != null) { sideSmallFont.dispose(); sideSmallFont = null; }
+    }
+
+    @Override
+    public void hide() {
+        release();
+    }
+
+    @Override
+    public void dispose() {
+        release();
     }
 }

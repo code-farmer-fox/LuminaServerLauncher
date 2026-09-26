@@ -100,8 +100,8 @@ public class NewNameInputScreen extends ScreenAdapter implements InputProcessor 
 
         // 3) 文字
         batch.begin();
-        UI.text(titleFont, batch, "New Server", w / 2f, h - 90, UI.TEXT_MAIN);
-        UI.text(smallFont, batch, "Name your server · latest vanilla will be downloaded",
+        UI.text(titleFont, batch, "新建服务器", w / 2f, h - 90, UI.TEXT_MAIN);
+        UI.text(smallFont, batch, "输入服务器名称 · 下一步选择版本",
                 w / 2f, h - 124, UI.TEXT_DIM);
 
         nameInput.drawText(batch);
@@ -111,18 +111,18 @@ public class NewNameInputScreen extends ScreenAdapter implements InputProcessor 
                     new Color(0.86f, 0.20f, 0.16f, 1f));
         }
 
-        UI.text(fieldFont, batch, "Continue", w / 2f, 36 + btnH / 2f);
-        UI.textLeft(smallFont, batch, "< Back", 40, 45, hoverBack ? UI.ACCENT : UI.TEXT_DIM);
+        UI.text(fieldFont, batch, "继续", w / 2f, 36 + btnH / 2f);
+        UI.textLeft(smallFont, batch, "< 返回", 40, 45, hoverBack ? UI.ACCENT : UI.TEXT_DIM);
         batch.end();
     }
 
     private void submit() {
         String clean = nameInput.getSanitized();
         if (clean.isEmpty()) {
-            error = "Please enter a valid name";
+            error = "请输入有效名称";
             return;
         }
-        app.setScreen(new DownloadScreen(app, clean, null));
+        app.setScreen(new VersionScreen(app, clean));
     }
 
     @Override public boolean keyDown(int keycode) {
@@ -153,14 +153,23 @@ public class NewNameInputScreen extends ScreenAdapter implements InputProcessor 
     @Override public boolean scrolled(float ax, float ay) { return false; }
     @Override public boolean touchCancelled(int x, int y, int p, int b) { return false; }
 
+    private void release() {
+        if (Gdx.input.getInputProcessor() == this) Gdx.input.setInputProcessor(null);
+        if (batch != null) { batch.dispose(); batch = null; }
+        if (shapes != null) { shapes.dispose(); shapes = null; }
+        if (white != null) { white.dispose(); white = null; }
+        if (titleFont != null) { titleFont.dispose(); titleFont = null; }
+        if (fieldFont != null) { fieldFont.dispose(); fieldFont = null; }
+        if (smallFont != null) { smallFont.dispose(); smallFont = null; }
+    }
+
+    @Override
+    public void hide() {
+        release();
+    }
+
     @Override
     public void dispose() {
-        if (Gdx.input.getInputProcessor() == this) Gdx.input.setInputProcessor(null);
-        if (batch != null) batch.dispose();
-        if (shapes != null) shapes.dispose();
-        if (white != null) white.dispose();
-        if (titleFont != null) titleFont.dispose();
-        if (fieldFont != null) fieldFont.dispose();
-        if (smallFont != null) smallFont.dispose();
+        release();
     }
 }

@@ -51,7 +51,7 @@ public class ConsoleScreen {
     public void drawText(boolean running) {
         float lx = host.lx();
         float y = host.cardY() + host.cardH() - 40;
-        UI.textLeft(host.headingFont(), host.batch(), "CONSOLE", lx, y, UI.TEXT_DIM);
+        UI.textLeft(host.headingFont(), host.batch(), "控制台", lx, y, UI.TEXT_DIM);
         y -= 36;
 
         float inputY = host.cardY() + 24;

@@ -121,7 +121,7 @@ public class DownloadScreen extends ScreenAdapter {
 
         boolean finished = donePath != null || error != null;
         boolean success = donePath != null && error == null;
-        String btnLabel = error != null ? "Back" : finished && success ? "Open Server" : "Back";
+        String btnLabel = error != null ? "返回" : finished && success ? "打开服务器" : "返回";
 
         float btnW = 200;
         float btnH = 48;
@@ -163,21 +163,21 @@ public class DownloadScreen extends ScreenAdapter {
         shapes.end();
 
         batch.begin();
-        UI.text(titleFont, batch, "Downloading " + serverName, w / 2f, h - 84, UI.TEXT_MAIN);
-        String subtitle = version == null ? "latest release" : "version " + version;
+        UI.text(titleFont, batch, "正在下载 " + serverName, w / 2f, h - 84, UI.TEXT_MAIN);
+        String subtitle = version == null ? "最新版" : "版本 " + version;
         UI.text(smallFont, batch, subtitle, w / 2f, h - 118, UI.TEXT_DIM);
 
         UI.text(headingFont, batch, version == null ? resolved : version, w / 2f, cardY + cardH - 36, UI.TEXT_MAIN);
 
         String status;
         if (error != null) {
-            status = "Failed";
+            status = "失败";
         } else if (donePath != null) {
-            status = "Complete";
+            status = "完成";
         } else if (requiredJava > 0) {
-            status = "Requires Java " + requiredJava;
+            status = "需要 Java " + requiredJava;
         } else {
-            status = "Resolving...";
+            status = "解析中...";
         }
         UI.text(bodyFont, batch, status, w / 2f, cardY + cardH - 76, error != null ? UI.TEXT_DIM : UI.TEXT_MAIN);
 
@@ -204,14 +204,23 @@ public class DownloadScreen extends ScreenAdapter {
         batch.end();
     }
 
+    private void release() {
+        if (batch != null) { batch.dispose(); batch = null; }
+        if (shapes != null) { shapes.dispose(); shapes = null; }
+        if (white != null) { white.dispose(); white = null; }
+        if (titleFont != null) { titleFont.dispose(); titleFont = null; }
+        if (headingFont != null) { headingFont.dispose(); headingFont = null; }
+        if (bodyFont != null) { bodyFont.dispose(); bodyFont = null; }
+        if (smallFont != null) { smallFont.dispose(); smallFont = null; }
+    }
+
+    @Override
+    public void hide() {
+        release();
+    }
+
     @Override
     public void dispose() {
-        if (batch != null) batch.dispose();
-        if (shapes != null) shapes.dispose();
-        if (white != null) white.dispose();
-        if (titleFont != null) titleFont.dispose();
-        if (headingFont != null) headingFont.dispose();
-        if (bodyFont != null) bodyFont.dispose();
-        if (smallFont != null) smallFont.dispose();
+        release();
     }
 }

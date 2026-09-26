@@ -10,7 +10,7 @@ public class App extends Game {
     @Override
     public void create() {
         config = GetConfig.get();
-        setScreen(new MenuScreen(this, true));
+        setScreen(new MenuScreen(this));
     }
 
     public Config getConfig() {

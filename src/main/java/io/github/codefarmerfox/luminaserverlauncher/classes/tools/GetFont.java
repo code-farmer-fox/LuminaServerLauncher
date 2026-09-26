@@ -62,9 +62,7 @@ public class GetFont {
     }
 
     public static BitmapFont getFont(FreeTypeFontGenerator.FreeTypeFontParameter parameter) {
-        BitmapFont font = generator.generateFont(parameter);
-        dispose();
-        return font;
+        return generator.generateFont(parameter);
     }
 
     public static String getContent() {

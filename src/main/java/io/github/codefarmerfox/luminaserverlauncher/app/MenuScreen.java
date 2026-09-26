@@ -1,7 +1,7 @@
 package io.github.codefarmerfox.luminaserverlauncher.app;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx. ScreenAdapter;
+import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -23,16 +23,9 @@ public class MenuScreen extends ScreenAdapter {
     private BitmapFont brandFont;
     private BitmapFont buttonFont;
     private BitmapFont smallFont;
-    private final boolean show;
-
-    public MenuScreen(App app, boolean show) {
-        this.app = app;
-        this.show = show;
-    }
 
     public MenuScreen(App app) {
         this.app = app;
-        this.show = false;
     }
 
     @Override
@@ -50,13 +43,6 @@ public class MenuScreen extends ScreenAdapter {
             brandFont = new BitmapFont();
             buttonFont = new BitmapFont();
             smallFont = new BitmapFont();
-        }
-        if (show) {
-            String last = app.getConfig() != null ? app.getConfig().lastServer : null;
-            if (last != null && !last.isEmpty()) {
-                app.setScreen(new ServerScreen(app, last));
-                return;
-            }
         }
     }
 
@@ -77,7 +63,12 @@ public class MenuScreen extends ScreenAdapter {
             return;
         }
         if (UI.clicked(centerX - BTN_W / 2f, y2, BTN_W, BTN_H)) {
-            app.setScreen(new ServerScreen(app, "原版核心"));
+            String last = app.getConfig() != null ? app.getConfig().lastServer : null;
+            if (last == null || last.isEmpty()) {
+                app.setScreen(new NewNameInputScreen(app));
+            } else {
+                app.setScreen(new ServerScreen(app, last));
+            }
             return;
         }
 
@@ -92,20 +83,29 @@ public class MenuScreen extends ScreenAdapter {
 
         batch.begin();
         UI.text(brandFont, batch, "LuminaServerLauncher", centerX, h - 120, UI.TEXT_MAIN);
-        UI.text(smallFont, batch, "MC Server 管理器", centerX, h - 152, UI.TEXT_DIM);
+        UI.text(smallFont, batch, "我的世界服务器管理器", centerX, h - 152, UI.TEXT_DIM);
         UI.text(buttonFont, batch, "准备服务器", centerX, y1 + BTN_H / 2f);
         UI.text(buttonFont, batch, "打开服务器", centerX, y2 + BTN_H / 2f);
         UI.text(smallFont, batch, "v0.2", centerX, 16, UI.TEXT_DIM);
         batch.end();
     }
 
+    private void release() {
+        if (batch != null) { batch.dispose(); batch = null; }
+        if (shapes != null) { shapes.dispose(); shapes = null; }
+        if (white != null) { white.dispose(); white = null; }
+        if (brandFont != null) { brandFont.dispose(); brandFont = null; }
+        if (buttonFont != null) { buttonFont.dispose(); buttonFont = null; }
+        if (smallFont != null) { smallFont.dispose(); smallFont = null; }
+    }
+
+    @Override
+    public void hide() {
+        release();
+    }
+
     @Override
     public void dispose() {
-        if (batch != null) batch.dispose();
-        if (shapes != null) shapes.dispose();
-        if (white != null) white.dispose();
-        if (brandFont != null) brandFont.dispose();
-        if (buttonFont != null) buttonFont.dispose();
-        if (smallFont != null) smallFont.dispose();
+        release();
     }
 }
